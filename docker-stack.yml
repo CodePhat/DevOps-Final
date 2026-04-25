@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  web:
+    image: ${DOCKER_HUB_USERNAME}/swarm-app:${IMAGE_TAG:-latest}
+    ports:
+      - "80:3000"
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints: [node.role == worker] # Keeps app on workers, not manager
+
+  visualizer:
+    image: dockersamples/visualizer:stable
+    ports:
+      - "8080:8080"
+    stop_grace_period: 1m
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+  
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000" # Access Grafana on port 3001
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    deploy:
+      mode: global # Runs on every single node automatically

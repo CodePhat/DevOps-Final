@@ -1,0 +1,76 @@
+---
+# PART 1: Install Docker on ALL Nodes
+- name: Install Docker on all nodes
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install dependencies
+      apt:
+        name: [apt-transport-https, ca-certificates, curl, software-properties-common, python3-pip]
+        update_cache: yes
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+    - name: Add Docker repo
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
+    - name: Install Docker
+      apt:
+        name: docker-ce
+        update_cache: yes
+    - name: Ensure Docker is running
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+# PART 2: Initialize Swarm on the Manager
+- name: Initialize Swarm Manager
+  hosts: manager
+  become: yes
+  tasks:
+    - name: Init Swarm
+      shell: docker swarm init --advertise-addr {{ ansible_host }}
+      register: swarm_init
+      ignore_errors: yes
+    - name: Get Join Token
+      shell: docker swarm join-token -q worker
+      register: worker_token
+
+# PART 3: Join the Workers to the Cluster
+- name: Join Workers to Swarm
+  hosts: workers
+  become: yes
+  tasks:
+    - name: Join Swarm
+      shell: "docker swarm join --token {{ hostvars['manager_node']['worker_token']['stdout'] }} {{ hostvars['manager_node']['ansible_host'] }}:2377"
+      ignore_errors: yes
+
+# PART 4: Setup Nginx and SSL (Manager Only)
+- name: Setup Reverse Proxy and HTTPS on Manager
+  hosts: manager
+  become: yes
+  vars:
+    domain_name: "phatminhkiet-devopsfinal.space" 
+    email: "lephatvip6@gmail.com"     
+  tasks:
+    - name: Install Nginx and Certbot
+      apt:
+        name: [nginx, certbot, python3-certbot-nginx]
+        update_cache: yes
+
+    - name: Deploy Nginx config
+      template:
+        src: nginx_proxy.j2
+        dest: /etc/nginx/sites-available/default
+      notify: Restart Nginx
+
+    - name: Obtain SSL Certificate
+      shell: "certbot --nginx -d {{ domain_name }} --non-interactive --agree-tos -m {{ email }}"
+      ignore_errors: yes
+
+  handlers:
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted
