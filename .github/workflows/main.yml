@@ -54,17 +54,27 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
+      - name: Copy files to Manager via SCP
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+          source: "docker-stack.yml,monitoring/*"
+          target: "~/"
+
+
       - name: Deploy to Swarm via SSH
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.SERVER_IP }}
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: github.sha
           script: |
-            # Update the image in the stack file and deploy
+            # Set variables for the stack file to use
             export DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
             export IMAGE_TAG=${{ github.sha }}
             
-            # Create a small script to deploy on the manager
-            docker stack deploy -c docker-stack.yml --with-registry-auth myswarm
+            # Deploy using the file we just copied to the home directory
+            docker stack deploy -c ~/docker-stack.yml --with-registry-auth myswarm
