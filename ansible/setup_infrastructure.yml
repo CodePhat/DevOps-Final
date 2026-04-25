@@ -23,6 +23,17 @@
         name: docker
         state: started
         enabled: yes
+    - name: Add ubuntu user to docker group
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
+
+    # This ensures the socket has the right permissions immediately
+    - name: Ensure docker socket has correct permissions
+      file:
+        path: /var/run/docker.sock
+        mode: '0666'
 
 # PART 2: Initialize Swarm on the Manager
 - name: Initialize Swarm Manager
