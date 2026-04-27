@@ -25,6 +25,7 @@ services:
 
   prometheus:
     image: prom/prometheus:latest
+    user: root
     volumes:
       - /home/ubuntu/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
@@ -32,6 +33,8 @@ services:
     deploy:
       placement:
         constraints: [node.role == worker]
+      restart_policy:
+        condition: on-failure
 
   grafana:
     image: grafana/grafana:latest
