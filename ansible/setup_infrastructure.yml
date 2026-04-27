@@ -8,54 +8,69 @@
       apt:
         name: [apt-transport-https, ca-certificates, curl, software-properties-common, python3-pip]
         update_cache: yes
+
     - name: Add Docker GPG key
       apt_key:
         url: https://download.docker.com/linux/ubuntu/gpg
+
     - name: Add Docker repo
       apt_repository:
         repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
+
     - name: Install Docker
       apt:
         name: docker-ce
         update_cache: yes
+
     - name: Ensure Docker is running
       service:
         name: docker
         state: started
         enabled: yes
+
     - name: Add ubuntu user to docker group
       user:
         name: ubuntu
         groups: docker
         append: yes
 
-    # This ensures the socket has the right permissions immediately
     - name: Ensure docker socket has correct permissions
       file:
         path: /var/run/docker.sock
         mode: '0666'
 
-# PART 2: Initialize Swarm on the Manager
+# PART 2: Initialize Swarm on the Manager (with Idempotency)
 - name: Initialize Swarm Manager
   hosts: manager
   become: yes
   tasks:
+    - name: Check if Swarm is already initialized
+      shell: docker info | grep "Swarm:" | awk '{print $2}'
+      register: swarm_status
+      changed_when: false
+
     - name: Init Swarm
       shell: docker swarm init --advertise-addr {{ ansible_host }}
-      register: swarm_init
-      ignore_errors: yes
+      when: "'active' not in swarm_status.stdout"
+
     - name: Get Join Token
       shell: docker swarm join-token -q worker
       register: worker_token
+      changed_when: false
 
-# PART 3: Join the Workers to the Cluster
+# PART 3: Join the Workers to the Cluster (with Idempotency)
 - name: Join Workers to Swarm
   hosts: workers
   become: yes
   tasks:
+    - name: Check if Worker is already in Swarm
+      shell: docker info | grep "Swarm:" | awk '{print $2}'
+      register: worker_swarm_status
+      changed_when: false
+
     - name: Join Swarm
       shell: "docker swarm join --token {{ hostvars['manager_node']['worker_token']['stdout'] }} {{ hostvars['manager_node']['ansible_host'] }}:2377"
-      ignore_errors: yes
+      when: "'active' not in worker_swarm_status.stdout"
 
 # PART 4: Setup Nginx and SSL (Manager Only)
 - name: Setup Reverse Proxy and HTTPS on Manager
@@ -76,8 +91,10 @@
         dest: /etc/nginx/sites-available/default
       notify: Restart Nginx
 
-    - name: Obtain SSL Certificate
-      shell: "certbot --nginx -d {{ domain_name }} --non-interactive --agree-tos -m {{ email }}"
+    - name: Obtain SSL Certificate and Force Redirect
+      # Added --redirect to ensure all traffic goes to HTTPS (Requirement B)
+      shell: "certbot --nginx -d {{ domain_name }} --non-interactive --agree-tos -m {{ email }} --redirect"
+      register: cert_result
       ignore_errors: yes
 
   handlers:
