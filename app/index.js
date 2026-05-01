@@ -8,8 +8,8 @@ app.get('/', (req, res) => {
         <h1>Production-Grade CI/CD System</h1>
         <p>Deployment Tier: <b>Docker Swarm</b></p>
         <p>Server Hostname: <b>${os.hostname()}</b></p>
-        <p>Status: <span style="color: green;">Online</span></p>
-        <p>Version: 1.0.0</p>
+        <p>Status: <span style="color: red;">Offline</span></p>
+        <p>Version: 1.0.1</p>
     `);
 });
 
