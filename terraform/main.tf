@@ -120,7 +120,7 @@ resource "aws_security_group" "swarm_sg" {
 # 2. EC2 Instances
 resource "aws_instance" "swarm_manager" {
   ami                    = data.aws_ami.ubuntu.id
-  instance_type          = "t2.micro"
+  instance_type          = "t3.small"
   key_name               = "vockey" 
   vpc_security_group_ids = [aws_security_group.swarm_sg.id]
   iam_instance_profile   = "LabInstanceProfile" 
@@ -130,7 +130,7 @@ resource "aws_instance" "swarm_manager" {
 resource "aws_instance" "swarm_worker" {
   count                  = 2
   ami                    = data.aws_ami.ubuntu.id
-  instance_type          = "t2.micro"
+  instance_type          = "t3.small"
   key_name               = "vockey"
   vpc_security_group_ids = [aws_security_group.swarm_sg.id]
   iam_instance_profile   = "LabInstanceProfile"
