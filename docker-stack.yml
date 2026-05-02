@@ -5,6 +5,8 @@ services:
     image: ${DOCKER_HUB_USERNAME}/swarm-app:${IMAGE_TAG}
     ports:
       - "8081:3000"
+    networks:
+      - monitoring # Added to same network for consistency
     deploy:
       replicas: 3
       update_config:
@@ -31,7 +33,7 @@ services:
     ports:
       - "9090:9090"
     networks:
-      - monitoring
+      - monitoring # Prometheus MUST be here
     deploy:
       placement:
         constraints: [node.role == manager]
@@ -42,6 +44,8 @@ services:
     image: grafana/grafana:latest
     ports:
       - "3001:3000"
+    networks:
+      - monitoring # FIX: Added this so it can talk to Prometheus
     deploy:
       placement:
         constraints: [node.role == manager]
@@ -49,7 +53,7 @@ services:
   node-exporter:
     image: prom/node-exporter:latest
     networks:
-      - monitoring
+      - monitoring # Exporters MUST be here
     deploy:
       mode: global
 
