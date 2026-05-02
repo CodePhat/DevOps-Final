@@ -9,7 +9,7 @@ app.get('/', (req, res) => {
         <p>Deployment Tier: <b>Docker Swarm</b></p>
         <p>Server Hostname: <b>${os.hostname()}</b></p>
         <p>Status: <span style="color: red;">Offline</span></p>
-        <p>Version: 1.0.1</p>
+        <p>Version: 1.0.0</p>
     `);
 });
 

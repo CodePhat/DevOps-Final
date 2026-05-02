@@ -2,9 +2,30 @@ server {
     listen 80;
     server_name phatminhkiet-devopsfinal.space;
 
+    # Gzip compression for faster loading across regions
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml;
+    gzip_min_length 1000;
+
     location / {
-        proxy_pass http://127.0.0.1:8081; 
+        proxy_pass http://127.0.0.1:8081;
+        
+        # FIX FOR 504: Try the next replica if one is slow or timing out
+        proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+        proxy_next_upstream_tries 3;
+        proxy_next_upstream_timeout 5s;
+
+        # Optimized timeouts for trans-pacific latency
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+
+        # Standard Production Headers
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
