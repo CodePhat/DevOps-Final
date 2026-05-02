@@ -9,6 +9,6 @@ scrape_configs:
   - job_name: 'node-exporter'
     dns_sd_configs:
     - names:
-      - 'tasks.node-exporter'
+      - 'tasks.myswarm_node-exporter'
       type: 'A'
       port: 9100
