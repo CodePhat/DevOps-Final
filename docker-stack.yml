@@ -30,6 +30,8 @@ services:
       - /home/ubuntu/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
+    networks:
+      - monitoring
     deploy:
       placement:
         constraints: [node.role == manager]
@@ -46,5 +48,11 @@ services:
 
   node-exporter:
     image: prom/node-exporter:latest
+    networks:
+      - monitoring
     deploy:
       mode: global
+
+networks:
+  monitoring:
+    driver: overlay
