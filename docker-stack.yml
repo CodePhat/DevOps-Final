@@ -12,8 +12,20 @@ services:
       update_config:
         parallelism: 1
         delay: 10s
+        order: start-first
+        failure_action: rollback
+      rollback_config:
+        parallelism: 1
+        order: stop-first
       restart_policy:
         condition: on-failure
+        
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   visualizer:
     image: dockersamples/visualizer:stable
