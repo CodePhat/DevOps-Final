@@ -6,7 +6,7 @@ services:
     ports:
       - "8081:3000"
     networks:
-      - monitoring # Added to same network for consistency
+      - monitoring 
     deploy:
       replicas: 3
       update_config:
@@ -33,7 +33,7 @@ services:
     ports:
       - "9090:9090"
     networks:
-      - monitoring # Prometheus MUST be here
+      - monitoring 
     deploy:
       placement:
         constraints: [node.role == manager]
@@ -45,17 +45,29 @@ services:
     ports:
       - "3001:3000"
     networks:
-      - monitoring # FIX: Added this so it can talk to Prometheus
+      - monitoring 
     deploy:
       placement:
         constraints: [node.role == manager]
 
   node-exporter:
     image: prom/node-exporter:latest
-    networks:
-      - monitoring # Exporters MUST be here
     deploy:
       mode: global
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    ports:
+      - target: 9100
+        published: 9100
+        protocol: tcp
+        mode: host
 
 networks:
   monitoring:
