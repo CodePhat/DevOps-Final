@@ -7,8 +7,13 @@ scrape_configs:
       - targets: ['localhost:9090']
 
   - job_name: 'node-exporter'
-    dns_sd_configs:
-    - names:
-      - 'tasks.myswarm_node-exporter'
-      type: 'A'
-      port: 9100
+    static_configs:
+      - targets:
+        - '172.31.34.1:9100'
+        - '172.31.38.104:9100'
+        - '172.31.34.1:9100'
+    #dns_sd_configs:
+    #- names:
+     # - 'tasks.myswarm_node-exporter'
+    #  type: 'A'
+     # port: 9100
